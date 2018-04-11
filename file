@@ -1,0 +1,115 @@
+github.service.ts
+======================
+import { Injectable } from '@angular/core';
+import{Http} from '@angular/http';
+import {Observable} from 'rxjs/Rx';
+import 'rxjs/add/operator/map'
+@Injectable()
+export class GithubService {
+
+  constructor(private http : Http) { 
+
+  }
+  getUser(searchtext) : Observable<any>{
+    const url =  searchtext;
+    return this.http.get(url).map(
+      res => {
+        const data = res.json();
+        console.log("data");
+        return data;
+      }
+    ) 
+
+  }
+
+}
+
+app.component.ts
+========================
+import { Component } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import {GithubService} from './github.service'
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent {
+  name:string = '';
+  age:number;
+  found:boolean;
+  data = null;
+  availableUserName = "";
+  isClicked = false;
+  selecteduser = null;
+  constructor(private githubService:GithubService){  }
+  onNameKeyUp(event:any){
+    this.name = event.target.value;
+    this.found = false;
+    
+  }
+  getProfile(){
+    //this.httpClient.get(`https://api.github.com/search/users?q=${this.name}`)
+    this.githubService.getUser(`https://api.github.com/search/users?q=${this.name}`)
+    .subscribe(
+      (data:any[]) => {
+        if(data.items.length) {
+          this.availableUserName = data.items;
+          data.items.forEach(element => {
+            console.log(element.login);
+            
+          });
+        }
+      }
+    )
+  }
+  getDetails(item){
+    this.isClicked = true;
+    this.selecteduser = item;
+    return item;
+  }
+}
+
+app.compont.html
+============================
+<h2>GET</h2>
+Name :<input type="text" (keyup)="onNameKeyUp($event)">
+<button (click)="getProfile()">Get Profile</button>
+<br>
+<div>
+  <ul *ngFor="let item of availableUserName">
+        <li (click)="getDetails(item)" >{{item.login}}</li>
+        <div *ngIf="isClicked && item.login == selecteduser.login">
+            <span>{{selecteduser.login}}</span><br>
+          <span>{{selecteduser.html_url}}</span><br>
+          <img [src] = "selecteduser.avatar_url" width=200px height="200px">    
+        </div>
+  </ul>
+</div>
+
+app.module.ts
+=======================
+import { BrowserModule } from '@angular/platform-browser';
+import { NgModule } from '@angular/core';
+import {HttpModule} from '@angular/http';
+import { AppComponent } from './app.component';
+import { HttpClientModule} from '@angular/common/http';
+import {InterceptorModule} from './interceptor.module';
+import { SearchComponent } from './search/search.component';
+import {GithubService} from './github.service';
+@NgModule({
+  declarations: [
+    AppComponent,
+    SearchComponent
+  ],
+  imports: [
+    BrowserModule,
+    HttpClientModule,
+    InterceptorModule,
+    HttpModule
+  ],
+  providers: [GithubService],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+
